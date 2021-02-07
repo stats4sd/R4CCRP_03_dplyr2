@@ -1,5 +1,5 @@
 ---
-title: "Manipulating Data using dplyr"
+title: "Manipulating Data using dplyr: part 2"
 output: 
   learnr::tutorial:
     progressive: true
