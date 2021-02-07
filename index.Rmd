@@ -1,0 +1,651 @@
+---
+title: "Manipulating Data using dplyr"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+    df_print: paged
+runtime: shiny_prerendered
+description: >
+  Learn to manipulate data with the package dplyr.
+---
+
+
+## Overview
+
+In this session, we will learn how to manipulate data and in particular, to select/modify/create columns, filter/order rows and calculate summaries. Knowing how to manipulate data is an essential skill that anyone working with data needs to acquire. We will focus on using the package `dplyr`, which is part of tidyverse, like ggplot2, and is probably the most commonly used package when it comes to this sort of data manipulation. I'm saying this *sort of data manipulation*, because we are not going to talk about more advanced manipulations like merging datasets or going from wide to long format. We will discuss these later, during the last session of the course.
+
+This session is split into two parts, and you'll have a series of exercises and questions along the way and at the end.
+
+1. In the first part - this workbook - we will mainly focus on learning how to use 5 of the 6 core functions of the package dplyr. These functions will help you perform all the data manipulations mentioned in the first sentence, that is:
+    + select columns - with `select()`
+    + filter rows - with `filter()`
+    + reorder rows - with `arrange()`
+    + make summaries - with `summarise()`
+    + create/modify columns - with `mutate()`
+
+2. In the second part, we will learn how to efficiently combine all these functions and a couple of new ones, to perform all the complex sequences of manipulations that you will need in your work. In particular, we will learn to
+    + perform a sequence of manipulation
+    + use the function `group_by()`
+    + use the pipe operator `%>%`
+
+
+Let's start with a video where I give you more information about data manipulation, the package dplyr and its core functions.
+
+![](https://youtu.be/koj23uKL45I)
+
+### loading dplyr
+
+Like ggplot, dplyr is an additional package that needs to be installed and then loaded. We haven't learnt how to properly do that yet, but in this workbook, dplyr is already pre-loaded, so we're good to go and learn about the core functions of dplyr!
+
+
+```{r setup, include=FALSE}
+library(learnr)
+library(dplyr)
+tutorial_options(exercise.timelimit = 10)
+options(max.print=50)
+BeanSurvey<-readRDS("bean_survey.RDS")[,-1]
+```
+
+
+
+## select()
+
+The `select()` function allows you to retrieve columns from a dataset. It's not the most useful of the dplyr functions, but it is probably the simplest. Inside the function you first indicate the dataset and then the columns you want to keep
+
+Let's first retrieve the column `AGEHH`.
+
+```{r select_1, exercise = TRUE}
+select(BeanSurvey, AGEHH)
+```
+
+
+To retrieve more than one column, simply list all the columns you want, separated with commas.
+
+```{r select_2, exercise = TRUE}
+select(BeanSurvey, VILLAGE, GENDERHH, AGEHH, LANDAREA)
+```
+
+
+Don't forget that R is case sensitive by the way. If you spell the name of a column wrongly, it will not work!  Can you spot what is wrong in the command below?
+
+```{r select_2_bis, exercise = TRUE}
+select(BeanSurvey, village, GENDERH, LANDAREA)
+```
+
+```{r select_2_bis-solution}
+# 'village' should be written with capital letters!
+# If you correct it, it will still not work though, because the column GENDERH doesn't exist.
+# it should be 'GENDERHH' (with two 'H' instead of just one)
+```
+
+
+`select()` follows your instructions, so if you change the order of the columns in your command, the order in the output will also change.
+
+```{r select_3, exercise = TRUE}
+select(BeanSurvey, GENDERHH, LANDAREA, VILLAGE, AGEHH)
+
+```
+
+
+When you want to retrieve lots of columns, it quickly becomes painful to list them all individually. Instead, you can use a colon `:` which asks R to retrieve all the columns that are positioned between the columns you indicate to the left and right of the colon. You could translate the colon by **to** and `MATOKE:COFFEE` by "all the columns from MATOKE **to** COFFEE" . So in the following command, we are asking R to retrieve all the columns from MATOKE to COFFEE:
+
+```{r select_4, exercise = TRUE}
+select(BeanSurvey, MATOKE:COFFEE)
+```
+
+And you can combine both methods to try and get all the columns you want in the least amount of effort.
+
+```{r select_5, exercise = TRUE}
+select(BeanSurvey, OCCUHH, MATOKE:COFFEE, INTERCROP)
+```
+
+Note that if you struggle finding the names of your columns, `colnames()` is a quick way to list them all: 
+```{r select_5b, exercise=TRUE}
+colnames(BeanSurvey)
+```
+
+**Question: Shorten the following command by using the "colon" operator whenever it's possible **
+```{r select_6, exercise=TRUE}
+select(BeanSurvey, VILLAGE, HHTYPE, GENDERHH, AGEHH, MATOKE, MAIZE, BEANS, BANANA, CASSAVA, COFFEE, LANDAREA, INTERCROP)
+```
+
+```{r select_6-solution}
+select(BeanSurvey, VILLAGE:AGEHH, MATOKE:LANDAREA, INTERCROP)
+```
+
+
+## filter()
+
+When you want to retrieve specific rows rather than columns, you use the function `filter()`. It is a function that you will likely use very often, for example, to filter out observations that appear to be of bad quality or that are not relevant for your analysis. The way it works is similar to `select()`: we write the data first, and then we indicate the rows that we want to retrieve. Except that our rows don't have names, so we use conditions on some of our columns instead. In the command below, the expression `ADULTS>3` tells R that we want all the rows for which the column `ADULTS` has a value greater than 3: We are asking R to keep all the households that have more than 3 adults
+
+
+```{r filter_1, exercise = TRUE}
+filter(BeanSurvey, ADULTS>3)
+```
+
+
+In R, the syntax to check if a value is greater or lower than another value is intuitive. You use the symbols `>` and `<`.
+However, to check if a value is EQUAL TO another value, you need to use `==`, not `=`. That's because a single equal has another use:
+
+- A single equals sign is a *statement*. When you write `x=y`, it sets x to be equal y.
+- A double equals sign is a *question*. When you write `x==y`, you're asking R *is x equal to y?*. If the response is yes, the condition is verified.
+
+So to retrieve all the households for which the household head is of gender female, we use the double equals sign.
+```{r filter_2, exercise = TRUE}
+filter(BeanSurvey, GENDERHH=="female")
+```
+In the command above R will check all the rows of the dataset BeanSurvey and returns the ones where the column `GENDERHH` takes the value "female". Note the quotes around "female". Whenever you write a string of text that is not an object or a column, you need to encapsulate it between quotes. Otherwise R will try to interpret it as an object or the name of a column.
+
+
+Also note that in R, you will not always get an error when you make a mistake. For example, if you write "female" with a capital F, you will just get no result:
+
+```{r filter_3, exercise = TRUE}
+filter(BeanSurvey, GENDERHH=="Female")
+```
+
+That's because even though R does not give you the answer you want, the command you wrote is totally valid. You're asking R to retrieve all the rows where Gender takes the value "Female". There are none, because R is case sensitive and female is always written with a lower case **f** in our dataset. If you were to write "**GENDER**" instead of "**GENDERHH**" on the left of the double equals sign though, you would get an error, because there's no column named "GENDER", so R cannot check the condition.
+
+
+
+### using multiple conditions
+
+You can also use multiple conditions and additional functions to filter rows. Here are the main logical symbols that you can use when building conditions in R:
+
+ `==` means EQUALS  
+`!=` means DIFFERENT  
+`<` means LESS THAN  
+`>` means GREATER THAN  
+`<=` means LESS THAN OR EQUAL TO  
+`>=` means GREATER THAN OR EQUAL TO
+
+`&` means AND  
+`|` means OR  
+`!` means NOT 
+
+If you're not familiar with the use of logical operations, have a look at the first 3 minutes of this video: <a href="https://www.youtube.com/watch?v=6PpQS-YLWDQ" target="_blank"> R Tutorial - Logical Operators and Vectors in R </a>
+
+Let's use multiple conditions in a couple of examples. One thing you should do to check the quality of your data is to inspect it for inconsistency. For example, it would make no sense to have households that 'grow beans for sale', but 'don't grow beans'! That is we can't have at the same time the value of the column `SELLBEANS` be "yes" and the value of the column `BEANS` be "no". Lets' check that no row is checking this double condition with filter:
+```{r filter_4, exercise = TRUE}
+filter(BeanSurvey, SELLBEANS=="Yes" & BEANS=="No")
+```
+In the command above, we separated the two condition with `&`, which is the symbol used in R for 'AND', because we want to retrieve the rows where `SELLBEANS=="Yes"` **AND** `BEANS=="No"`. R did not retrieve any row, which is good. Don't forget that R is case sensitive though. In our data, the value "Yes" is written with an upper case "Y" and a lower case "es", and the value "No" is written with an uppercase "N" and a lowercase "o". It would be very easy to misspell these two values in our command, which would make us reach the same conclusion that there is no inconsistency in our data, but without having tested it properly!
+
+`filter` can also be useful to explore a specific subset of the population. For example, I saw that the head of household of most households is either a farmer or a fisherman. I am a bit curious about the households who are not in this situation. We can retrieve them using the following command:
+```{r filter_5, exercise = TRUE}
+filter(BeanSurvey, !(OCCUHH=="Farmer" | OCCUHH=="Fisherman"))
+```
+The command above looks a bit complicated, but it is actually quite simple. Let's break it into steps.
+
+The symbol `|` represents "OR", so the following command would retrieve all the households for which the head of household is a farmer OR a fisherman:
+```{r filter_6, exercise = TRUE}
+filter(BeanSurvey, OCCUHH=="Farmer" | OCCUHH=="Fisherman")
+```
+
+Brackets are used to group expressions, in order to force R to perform operations in a specific order, exactly as in basic mathematical operations. Encapsulating the whole expression doesn't change the output of our command:
+```{r filter_7, exercise = TRUE}
+filter(BeanSurvey, (OCCUHH=="Farmer" | OCCUHH=="Fisherman"))
+```
+
+Finally we use the symbol `!` that represents "NOT", to only keep the rows where the head of household is **NOT** either a farmer or a fisherman.
+```{r filter_8, exercise = TRUE}
+filter(BeanSurvey, !(OCCUHH=="Farmer" | OCCUHH=="Fisherman"))
+```
+
+The brackets are important here, because in boolean logic "NOT" takes priority over "OR", so using the expression `!OCCUHH=="Farmer" | OCCUHH=="Fisherman"` we would retrieve the rows where *the head of household is not a farmer, OR the head of household is a fisherman*. This type of priority is similar to the priority of multiplication over addition or subtraction. In maths, the result of the calculation 3 x 2 + 2 is 8. To have the addition 2 + 2 performed before the multiplication 3 x 2, we need to add brackets: 3 x (2 + 2). It is the same with NOT and OR.
+
+Also note that we could have retrieved our households in another way, using "&" and "!=" (AND and IS DIFFERENT) instead of "|" and "!" (OR and NOT):
+```{r filter_9, exercise = TRUE}
+filter(BeanSurvey, OCCUHH!="Farmer" & OCCUHH!="Fisherman")
+```
+Indeed, the command above is asking R for the rows where
+> the occupation of the head of household IS DIFFERENT from farmer AND the occupation of the head of household IS DIFFERENT from fisherman.
+
+There are often many different ways to get to the same results in R. We believe that the commands we show you in these workbooks are good ones to work efficiently and have a readable code, but if for some reason you want to use different commands, you can do so!
+
+
+### using functions within a condition statement
+
+In a condition statement, we can also use functions like `max()` or `min()` to help us with the filtering. Let's retrieve the households whose land area of farm is the largest:
+```{r filter_10, exercise = TRUE}
+filter(BeanSurvey, LANDAREA==max(LANDAREA))
+```
+
+In the command above, R first calculates the result of `max(LANDAREA)` in the dataframe BeanSurvey, which is:
+```{r filter_11, exercise = TRUE}
+max(BeanSurvey$LANDAREA)
+```
+
+And it then performs the corresponding filtering:
+```{r filter_12, exercise = TRUE}
+filter(BeanSurvey, LANDAREA==10)
+```
+
+As you see, we didn't get one single result here. That's because filter retrieves *all* the rows that satisfy the specified condition, and we have several households whose farm land area is 10 acres.
+
+
+
+**Question: write the command that would show the households whose land area is the smallest**
+```{r filter_13, exercise=TRUE}
+
+```
+
+```{r filter_13-solution}
+filter(BeanSurvey, LANDAREA==min(LANDAREA))
+```
+
+
+
+
+
+
+
+## arrange()
+
+Let's relax a little and have a brief look at the `arrange` function, which is used to order the rows of a data frame according to the values of some columns. The syntax is very similar to that of `select`, as after we enter the dataset, we simply indicate the column(s) by which we want to order the dataset. Let's order our dataset by land area of farm:
+
+```{r arrange_1, exercise = TRUE}
+arrange(BeanSurvey, LANDAREA)
+```
+
+Depending on the size and resolution of your screen, you may need to click the little arrow at the top right to reach the column `LANDAREA` and check that the data has indeed been ordered by that variable. You will see that the households with smallest land area are at the top. That's because by default, `arrange()` orders your dataset by increasing values of the indicated column. If we want it to be to order from highest to lowest value instead, we need to place our column inside the function `desc()` - "desc" for *descending*
+
+```{r arrange_2, exercise = TRUE}
+arrange(BeanSurvey, desc(LANDAREA))
+```
+
+Note that we can order a dataset by multiple columns and thes columns don't necessary have to be numeric. Let's order our dataset by age group, gender of the head of household, and decreasing order of the number of children respectively:
+```{r arrange_3, exercise = TRUE}
+arrange(BeanSurvey, AGEHH, GENDERHH, desc(CHILDREN))
+```
+The households where the head of household are between 20 and 30 years old are now at the top, the one with a female head of household being first. And for the male headed households, the higher the number of children, the higher they place in the table.
+
+
+As this section is a bit shorter than the other ones, let me briefly introduce you to the function `slice()`, which is quite useful to quickly retrieve specific rows by position. The syntax is similar to all the core functions of dplyr. The data is the first argument, and then we indicate the rows that we want. Since `1:5` is a shorthand for `c(1,2,3,4,5)`, we can retrieve the first 5 rows of our dataset with the following command:
+```{r arrange_slice, exercise = TRUE}
+slice(BeanSurvey, 1:5)
+```
+`slice()` is often useful after `arrange()`, to retrieve the few rows that have the highest or lowest values for the column used to order the rows.
+
+
+
+**Question: Use the function `arrange()` to order the rows of the BeanSurvey dataset by decreasing order of the number of adults in the household**
+```{r arrange_4, exercise = TRUE}
+
+```
+
+```{r arrange_4-solution}
+arrange(BeanSurvey, desc(ADULTS))
+```
+
+
+## summarise()
+
+The next function we will learn about is `summarise()`, which calculates summaries of variables within our dataset. As with all the other dplyr functions, the first argument is the name of our data. The second argument provides a summary calculation.
+
+
+For example, to know the total area of all the household farms in the BeanSurvey data frame, we can use the summary function `sum()`:
+```{r summarize_1, exercise = TRUE}
+summarise(BeanSurvey, sum(LANDAREA))
+```
+
+This seems equivalent to doing:
+```{r summarize_1b, exercise = TRUE}
+sum(BeanSurvey$LANDAREA)
+```
+
+Except that with summarise, the output is a data frame, which is extremely useful if we want to use our summaries later, or combine our command with other manipulations. We should also get used to give a proper name to the output column containing our summary statistics to make it easy to reuse it in later steps. To do so, we place the name we would like for our summary followed by a single equals sign just in front of our calculation.
+```{r summarize_2, exercise = TRUE}
+summarise(BeanSurvey, totalArea=sum(LANDAREA))
+```
+Note that we use the single equals sign, not the double equals sign, because we are **assigning** our summary statistics `sum(LANDAREA)` to a column called `totalArea`.
+
+
+**Remark**: You may sometimes see people use summari**z**e() instead of summari**s**e() like I do in the video. They are identical. The people who made dplyr are from New Zealand, where they use the British spelling summari**s**e(). But they are very nice people and decided to allow for the American spelling as well.
+
+
+
+We can ask R to give us more than one summary, by listing the calculations we want to perform, separated with commas.
+
+```{r summarize_3, exercise = TRUE}
+summarise(BeanSurvey, households=n(), mean_area=mean(LANDAREA), sd_area=sd(LANDAREA))
+```
+Here we used the functions `mean()` and `sd()` to calculate the mean, and standard deviation of the column LANDAREA. We also used the function `n()`, which simply counts the number of rows - that is, here, the number of households.
+
+So far, we've only used numeric variables in our calculations, but we can also use factors or categorical variables. For example, it is often useful to count the number of occurrences of a certain value using conditions, a bit like we did in the `filter` section. Let's try to count the number of female headed and male headed households:
+
+```{r summarize_4, exercise = TRUE}
+summarise(BeanSurvey, female_HH=sum(GENDERHH=="female"), male_HH= sum(GENDERHH=="male"))
+```
+
+Argh, we obtain the value 'NA'! That's because there is a missing value in this column. Have a look at the 17th row of the dataset:
+```{r summarize_5, exercise = TRUE}
+slice(BeanSurvey, 17)
+```
+
+But we can tell R to skip the missing values, by using the argument `na.rm=TRUE` within the `sum()` function:
+```{r summarize_6, exercise = TRUE}
+summarise(BeanSurvey, female_HH=sum(GENDERHH=="female", na.rm=TRUE), male_HH= sum(GENDERHH=="male", na.rm=TRUE))
+```
+
+**Question: Use summarise to calculate the number of households growing beans, maize and coffee. Give sensible names to these numbers**
+```{r summarize_7, exercise = TRUE}
+
+```
+
+
+```{r summarize_7-solution}
+summarise(BeanSurvey, grow_beans = sum(BEANS=="Yes"), grow_maize = sum(MAIZE=="Yes"), grow_coffee = sum(COFFEE=="Yes")) 
+
+```
+
+`summarise()` is especially useful when it is used in combination with the function `group_by()` that we will see in a moment. 
+
+
+## mutate()
+
+The next function to look at is `mutate()`. It is used to modify existing columns or create new columns. The syntax is as follows: We indicate our dataset first, as always, and then we provide the calculations that we want to perform for our new columns.
+
+For example, it would probably be useful to create a new column representing the size of each household, by adding the number of children and the number of adults:
+```{r mutate_1, exercise = TRUE}
+mutate(BeanSurvey, hh_size = ADULTS + CHILDREN)
+```
+
+Like for the summarise function, we could omit naming our new column, but then R would just use the calculation itself as the column name. That's what happened in the video. We don't always set a good example!
+
+You can see that the new column `hh_size` appears at the very end of the dataset. We could use `select()` to move it more towards the beginning of our columns if we knew how to combine multiple manipulations. We will see how to do that shortly.
+
+
+Similarly to `summarise()`, you can use functions like `sum()`, `min()`, `max()` , or calculations over conditions to help you create your new columns. Let's create a variable that tells us whether or not a household has children:
+
+```{r mutate_2, exercise = TRUE}
+mutate(BeanSurvey, has_children = CHILDREN > 0)
+```
+In the command above, when the column CHILDREN is greater than 0, the expression `CHILDREN > 0` returns `TRUE`. Otherwise, it returns `FALSE`. If you look just below the name of this variable, you will see a set of weird grey characters. It indicates the type of the variable. Here the set of characters is `<lgl>` and "lgl" is a shorthand for 'logical'. That's because we just created a variable of type 'logical'. The only values that a logical variable can take are 'TRUE' and 'FALSE', which are special values used by R to determine if a condition is true or false.
+
+Note that you have a similar set of grey characters below every column name, and `<chr>`, `<int>`, `<dbl>` indicate that the corresponding variables are of type 'character', 'integer' and 'double' respectively, the two latter being different types of numeric variables. The operations and functions that you can apply to a variable depends on their type, so this information is very useful, especially to understand why you get errors or things don't go as expected. For example, whenever you try to make a calculation with a character variable, R will give you an error.
+
+
+### creating categorical variables using ifelse()
+
+So far, we've created a numeric column (`hh_size` was of type integer) and a column of type logical. Creating a proper categorical variables is a bit less straightforward. Let's see one nice way to do so, using the base-R function `ifelse()`, which checks every row for a condition and returns a value. `ifelse()` takes three arguments. A condition to verify, a value that is returned if the condition is verified, and a value returned if the condition is **not** verified. So the syntax is:
+
+'ifelse'(`CONDITION`, `VALUE IF CONDITION IS TRUE`, `VALUE IF CONDITION IS FALSE`)
+
+Let's try with a simple example. We'll create a simple column hh_occupation, that takes only two values: "Farmer" or "Other". As a reminder, here are the values that the column OCCUH takes in our dataset:
+```{r mutate_2c, exercise = TRUE}
+BeanSurvey$OCCUHH
+```
+
+To generate a variable that takes the value "Farmer" if the occupation of the head of household is farmer, and "other" otherwise, we can use the following command:
+
+```{r mutate_2d, exercise = TRUE}
+ifelse(BeanSurvey$OCCUHH == "Farmer", "Farmer", "Other")
+```
+
+And we can do the same, but inside the function mutate, to add this variable to our dataset. We need to remove "BeanSurvey$" from the command though, since the data is already indicated as the first argument of mutate.
+
+```{r mutate_2e, exercise = TRUE}
+mutate(BeanSurvey, hh_occupation = ifelse(OCCUHH== "Farmer", "Farmer", "Other"))
+```
+
+
+### creating multiple columns and replacing columns
+
+Of course, we can create multiple columns at once. We simply need to separate the associated calculations with commas.
+
+```{r mutate_3, exercise = TRUE}
+mutate(BeanSurvey, hh_size = ADULTS + CHILDREN, has_children = CHILDREN > 0, hh_occupation = ifelse(OCCUHH== "Farmer", "Farmer", "Other"))
+```
+
+
+Also if you remember, I said that mutate can also "modify" a column. You achieve that by using an already existing column name as the name of your new column. Here we replace the variable `CHILDREN` rather than creating the variable `has_children`:
+
+```{r mutate_4, exercise = TRUE}
+mutate(BeanSurvey, CHILDREN = CHILDREN > 0)
+```
+You need to be careful when modifying existing columns though. In general, as it's not too much of a pain to have lots of columns - since we have the function `select()` to pick the ones we want - we often prefer to create new columns rather than modifying existing ones.
+
+
+**Question: create a column that measures the total yield of beans per acre of each household. Give it a sensible name**
+
+```{r mutate_5, exercise = TRUE}
+
+```
+
+```{r mutate_5-solution}
+mutate(BeanSurvey, yield_per_acre = (BEANSHARVESTED_LR + BEANSHARVESTED_SR)/LANDAREA)
+
+```
+
+
+
+
+## Combining manipulations
+
+![](https://youtu.be/skdI9iIysm0)
+
+We've now learnt to use most of the core functions of dplyr. But their use is greatly limited by the fact that we still don't know how to combine them together. 
+
+Because as explained in the video, if we don't store the results of our commands, there is no way to re-use them. This is actually true for the great majority of R commands, not just those involving the core functions of dplyr. So to perform a sequence of manipulations, we need to either:
+
+- store the result of each manipulation as a data frame, to then make it the first argument of the next function.
+- combine all the manipulations we want to perform into one single command using the **pipe operator**.
+
+You already know everything there is to know to perform a sequence of manipulations via the first option.
+For example, if we wanted to calculate a couple of summary statistics on the household living in the Lwala village, we could do the following:
+
+```{r sequence_1, exercise = TRUE}
+BeanSurvey_Lwala <- filter(BeanSurvey, VILLAGE=="Lwala")
+summarise(BeanSurvey_Lwala, households=n(), mean_land=mean(LANDAREA), grow_beans= sum(BEANS=="Yes"))
+```
+First we use `filter()` to keep only the households of "Lwala". We store the result as a new object, called "BeanSurvey_Lwala". Then we use the `summarise()` command, but with the newly created object as the first argument instead of the full imdb dataset.
+
+
+
+**Question: change the command to get summaries for the households in Kimbugu rather than Lwala. Give a sensible name to the intermediary data frame**
+
+```{r sequence_2, exercise = TRUE}
+BeanSurvey_Lwala <- filter(BeanSurvey, VILLAGE=="Lwala")
+summarise(BeanSurvey_Lwala, households=n(), mean_land=mean(LANDAREA), grow_beans= sum(BEANS=="Yes"))
+```
+
+```{r sequence_2-solution}
+BeanSurvey_Kimbugu <- filter(BeanSurvey, VILLAGE=="Kimbugu")
+summarise(BeanSurvey_Kimbugu, households=n(), mean_land=mean(LANDAREA), grow_beans= sum(BEANS=="Yes"))
+```
+
+But what if there were say, 20 villages? Doing this for each village would be very time consuming. Don't worry, there is a much better approach, using `group_by()`, the last core function of the package dplyr.
+
+
+## group_by()
+
+`group_by()` tells R to separate a dataset into groups, based on the values of a column. All the subsequent operations performed on the resulting "grouped" dataset are applied to each group rather than to the whole dataset. For the syntax, we indicate the dataset first, as usual, and then we indicate the column whose values will define our groups. Let's group our dataset by village
+
+```{r group_1, exercise = TRUE}
+group_by(BeanSurvey, VILLAGE)
+
+```
+It looks like nothing happened to our dataset, but it's just because the grouping is invisible. We need to apply another function to see the effect of `group_by()`. Let's store our grouped data frame in an object called say, "BeanSurvey_ByVillage", and use this object as the first argument of the function `summarise()`
+
+```{r group_2, exercise = TRUE}
+BeanSurvey_ByVillage <- group_by(BeanSurvey, VILLAGE)
+summarise(BeanSurvey_ByVillage, households=n(), mean_land=mean(LANDAREA), grow_beans= sum(BEANS=="Yes"))
+```
+
+The effect of `group_by()` on the result of `summarise()` is very intuitive. We obtain the calculated summaries for each of the groups defined by the function `group_by()`. At first, it might be slightly less obvious that `group_by()` is also very useful in combination with `filter()` or `mutate()`. But consider the case where we would like to retrieve for each village the information of the household that has harvested the highest quantity of beans in long rain season. With filter, we can easily get the household that has harvested the highest quantity of beans during the long rain season in the full dataset:
+```{r group_4, exercise = TRUE}
+filter(BeanSurvey, BEANSHARVESTED_LR==max(BEANSHARVESTED_LR, na.rm=TRUE))
+
+```
+Note that there is one value that is missing in the column `BEANSHARVESTED_LR`, so we need to use `na.rm=TRUE` like for the function `mean()` earlier.
+
+But the highest production of beans during long rain season comes from a household in *Kimbugu*. In Lwala, the highest production is smaller than that and so it is not captured by our filter function.
+
+Using `group_by()` first, and *then* `filter()` would restrict the scope of `BEANSHARVESTED_LR==max(BEANSHARVESTED_LR, na.rm=TRUE)` to each village, and so if a household has the highest production in this village, filter will retrieve it.
+
+```{r group_4a, exercise = TRUE}
+BeanSurvey_ByVillage <- group_by(BeanSurvey, VILLAGE)
+filter(BeanSurvey_ByVillage, BEANSHARVESTED_LR==max(BEANSHARVESTED_LR, na.rm=TRUE))
+
+```
+
+
+**Question: Calculate the number of household and average land area for each type of household composition (column HHTYPE). What do we seem to see?**
+```{r group_4b, exercise = TRUE}
+
+
+```
+
+```{r group_4b-solution}
+BeanSurvey_ByHHType<-group_by(BeanSurvey, HHTYPE)
+summarise(BeanSurvey_ByHHType, households=n(), averageArea=mean(LANDAREA))
+# There are two main household composition in the dataset: Female headed, no husband (13 households), and Male headed one wife (27 households)
+# The households of the second type seem to have the largest lands in average
+
+```
+
+But what if we wanted to perform more than two manipulations? What if we wanted to keep only those household who grow beans and calculate for each village the average yield per acre? It doesn't sound too complicated, but we still need to use four functions to do that.
+
+- filter to get rid of the households that don't grow beans
+= mutate to calculate the yield per acre of each household
+- group_by to group our data by village
+- summarise to calculate the average yield per acre by village.
+
+And after each manipulation, we would need to save the result as a new data frame that will be used as the input for the next function.
+
+This would do the job:
+
+```{r group_5, exercise = TRUE}
+BeanSurvey_filtered <- filter(BeanSurvey, BEANS=="Yes")
+BeanSurvey_mutated <- mutate(BeanSurvey_filtered, yield_per_acre = (BEANSHARVESTED_LR + BEANSHARVESTED_SR)/LANDAREA)
+BeanSurvey_grouped_by<- group_by(BeanSurvey_mutated, VILLAGE)
+summarise(BeanSurvey_grouped_by, households=n(), avg_yield_per_acre=mean(yield_per_acre, na.rm=TRUE))
+
+```
+The code above starts to be quite messy, with lots of intermediary data frames that we are not really interested in. One thing you may suggest to simplify our set of commands is to have only one intermediary data frame, that we overwrite. Something like
+```{r group_7, exercise = TRUE}
+temp_data <- filter(BeanSurvey, BEANS=="Yes")
+temp_data <- mutate(temp_data, yield_per_acre = (BEANSHARVESTED_LR + BEANSHARVESTED_SR)/LANDAREA)
+temp_data <- group_by(temp_data, VILLAGE)
+summarise(temp_data, households=n(), avg_yield_per_acre=mean(yield_per_acre, na.rm=TRUE))
+
+```
+
+It looks slightly simpler maybe, and show you that when creating objects with `<-`, it makes no difference whether the name of the object is new or not. If it is not new, R will just overwrite the old object.
+
+But this way of overwriting objects over and over is definitely not good practice, as in some situations you may end up loosing valuable data. We don't need to use such approach though. We can make our command much more clean and readable if we use the pipe operator.
+
+
+## pipe %>%
+
+The symbol used for the pipe operator in R is `%>%`, that is a symbol greater than `>` surrounded by two percentages `%`. This operator is extremely useful because it makes it possible to perform a sequence of data manipulations using dplyr functions, without having to create any intermediate data frame. This is due to the consistent syntax of these dplyr functions, and in particular, the fact that their first argument is always the data fame that we want to manipulate.
+
+Because what the pipe operator does is to tell R
+
+> take what's on my left, and make it the first argument of the next function on my right or below me
+
+So if in the command `thing1 %>% thing2`, `thing1` is a data frame and `thing2` is a dplyr function, the pipe operator will ask R to make the data frame the first argument of the dplyr function. And R will happily perform the corresponding manipulation on the data frame since it results in a valid command.
+
+```{r pipe_1, exercise = TRUE}
+BeanSurvey %>% filter(BEANS=="Yes")
+
+```
+
+In the above commands, the pipe operator asks R to take what's on its left - the data frame `BeanSurvey` - and to make it the first argument of what's on its right - the function `filter()`.
+The command is therefore equivalent to
+
+```{r pipe_1b, exercise = TRUE}
+filter(BeanSurvey, BEANS=="Yes")
+
+```
+
+Instead of placing the function filter to the right of the pipe, we can, and usually should place it below the pipe, with a little indentation, similar to what you do with the `+` in ggplot2. It's good practice for readability, and it doesn't change anything. R will see the pipe and look for the next command. This command happens to be below the pipe rather than on its right.
+
+```{r pipe_2, exercise = TRUE}
+BeanSurvey %>% 
+  filter(BEANS=="Yes")
+
+```
+ 
+
+What is great with pipes is that the *what's on my left* can well be a command itself, if the result of the command is a data frame. So we can redo the last commands of the previous section, using pipes.
+
+
+Our commands were
+```{r pipe_2b, exercise = TRUE}
+BeanSurvey_filtered <- filter(BeanSurvey, BEANS=="Yes")
+BeanSurvey_mutated <- mutate(BeanSurvey_filtered, yield_per_acre = (BEANSHARVESTED_LR + BEANSHARVESTED_SR)/LANDAREA)
+BeanSurvey_grouped_by<- group_by(BeanSurvey_mutated, VILLAGE)
+summarise(BeanSurvey_grouped_by, households=n(), avg_yield_per_acre=mean(yield_per_acre, na.rm=TRUE))
+
+```
+
+
+Using pipes it becomes:
+
+```{r pipe_3, exercise = TRUE}
+BeanSurvey %>% 
+  filter(BEANS=="Yes") %>%
+    mutate(yield_per_acre = (BEANSHARVESTED_LR + BEANSHARVESTED_SR)/LANDAREA) %>%
+      group_by(VILLAGE) %>%
+        summarise(households=n(), avg_yield_per_acre=mean(yield_per_acre, na.rm=TRUE))
+
+```
+
+We start with the dataset `BeanSurvey`. The pipe next to it will make it the first argument of the function `filter()` that follows. The next pipe makes the resulting command the first argument of the function `mutate()`. The next pipe takes the result of all of this and make it the first argument of the next function, which is `group_by()`. And the last pipe makes the resulting data frame, the first argument of the function `summarise()`. Here we go. We have a neat and concise command! Note that when using pipes, the output from the previous line always takes the place of the ‘data’ argument. So when using the commands with the pipes, we skip straight to the second argument.
+
+
+And that's where things start to be very interesting. Because with pipes, it is not a pain anymore to perform a long sequence of manipulations. So we can really start to have fun!
+
+Also note that the order of our commands matter. Try and see if you can understand what happens when you change the order of these commands.
+
+
+
+
+Something we can also do is continue our commands with functions that are not part of dplyr, because pipe is so popular that lots of the most recent packages provide functions that are compatible with pipes. And as said in the video, `ggplot()` is compatible with pipes, since its first argument is the dataframe used to make the plot.
+
+
+
+Let's try and make a little scatter plot showing the average rating (on the y axis) of the most voted on movie released per year, where year is on the x axis. How are we going to do that?
+
+Well we know that we're only interested in movies, so a safe first step would be to filter out the other entries using filter:
+
+
+
+As you may start to see, once you get familiar with the pipe operator and all the functions we've seen so far, it quickly becomes pretty easy to make long sequences of manipulations.
+
+
+
+**Question: Determine for each type of entry, which is the best rated title using pipes?**
+
+```{r pipe_4, exercise = TRUE}
+
+
+```
+```{r pipe_4-solution}
+imdb %>%
+  group_by(type) %>%
+    filter(averageRating==max(averageRating))
+
+```
+
+
+
+Of course, if we want to store the result of our full command into a dataframe object for later use, we can do that.
+
+
+
+## Appendix: Useful reference links  
+
+
+The official dplyr documentation: <a href="https://dplyr.tidyverse.org/" target="_blank">https://dplyr.tidyverse.org/</a> 
+
+dplyr CheatSheet:<a href="https://github.com/rstudio/cheatsheets/blob/master/data-transformation.pdf" target="_blank">https://github.com/rstudio/cheatsheets/blob/master/data-transformation.pdf   </a>  
+
+Data Manipulation Tools - Rstudio video:
+<a href="https://www.youtube.com/watch?v=Zc_ufg4uW4U" target="_blank">dplyr -- Pt 3 Intro to the Grammar of Data Manipulation with R   </a> 
+
+Some documentation on subsetting r-objects using base-R: <a href="https://bookdown.org/rdpeng/rprogdatascience/subsetting-r-objects.html" target="_blank">https://bookdown.org/rdpeng/rprogdatascience/subsetting-r-objects.html </a> 
+
+
