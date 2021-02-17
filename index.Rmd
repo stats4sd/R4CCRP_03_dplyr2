@@ -406,7 +406,7 @@ filter(BeanSurvey, BANANA=="Yes")
 ```
 -->
 
-**Exercise 2. Identify and correct the four mistakes that I made in the command below, to obtain the median duration of all the movies released after the year 2000**
+**Exercise 2. Identify and correct the four mistakes that I made in the command below, to obtain the median land area of farm of all the households in the BeanSurvey dataset**
 
 ```{r ex2,exercise=TRUE,error=TRUE}
 BeanSurvey %>%
@@ -482,7 +482,7 @@ BeanSurvey %>%
 ```
 -->
 
-**Exercise 6. Generate a boxplot of the quantity of beans harvested during the long rain season by type of household composition, keeping only the two main household composition types. Apply an appropriate 'scale' transformation the quantity of beans harvested**
+**Exercise 6. Generate a boxplot of the quantity of beans harvested during the long rain season by type of household composition, keeping only the two main household composition types. Apply an appropriate 'scale' transformation to the quantity of beans harvested**
 
 ```{r ex6,exercise=TRUE}
 
